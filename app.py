@@ -15,15 +15,15 @@ def after_request(response):
     return response
 
 # Configuration
-NVIDIA_API_KEY = os.environ.get('NVIDIA_API_KEY', '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')
+NVIDIA_API_KEY = os.environ.get('NVIDIA_API_KEY', 'your-key-here')
 NVIDIA_BASE_URL = 'https://integrate.api.nvidia.com/v1'
 DEFAULT_MODEL = "meta/llama-3.1-405b-instruct"
 
 @app.route('/')
 def home():
-    return jsonify({
+    return 
         "message": "NVIDIA NIM Proxy is running!",
-        "endpoints": {
+        "endpoints": {''
             "chat": "/v1/chat/completions",
             "models": "/v1/models",
             "health": "/health"
@@ -140,15 +140,3 @@ def health_check():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port)
-```
-
-4. Click **"Commit changes"**
-
-## Step 4: Add requirements.txt
-1. Click **"Add file"** → **"Create new file"**
-2. Name it: `requirements.txt`
-3. Paste:
-```
-flask
-requests
-gunicorn
