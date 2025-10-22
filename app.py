@@ -21,9 +21,9 @@ DEFAULT_MODEL = "meta/llama-3.1-405b-instruct"
 
 @app.route('/')
 def home():
-    return 
+    return jsonify({
         "message": "NVIDIA NIM Proxy is running!",
-        "endpoints": {''
+        "endpoints": {
             "chat": "/v1/chat/completions",
             "models": "/v1/models",
             "health": "/health"
