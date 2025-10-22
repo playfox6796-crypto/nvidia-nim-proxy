@@ -14,8 +14,8 @@ def after_request(response):
     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
     return response
 
-# Configuration
-NVIDIA_API_KEY = os.environ.get('NVIDIA_API_KEY', 'your-key-here')
+# Configuration - CHANGE THIS!
+NVIDIA_API_KEY = os.environ.get('NVIDIA_API_KEY', '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')
 NVIDIA_BASE_URL = 'https://integrate.api.nvidia.com/v1'
 DEFAULT_MODEL = "meta/llama-3.1-405b-instruct"
 
@@ -30,20 +30,19 @@ def home():
         }
     })
 
-@app.route('/v1/chat/completions', methods=['POST', 'OPTIONS'])
+@app.route('/v1/chat/completions', methods=['POST'])
 def chat_completions():
-    if request.method == 'OPTIONS':
-        return '', 204
-    
     try:
         data = request.get_json()
         
+        # Extract parameters
         messages = data.get('messages', [])
         model = data.get('model', DEFAULT_MODEL)
         temperature = data.get('temperature', 0.7)
         max_tokens = data.get('max_tokens', 1024)
         stream = data.get('stream', False)
         
+        # Prepare NVIDIA NIM request
         nim_payload = {
             "model": model,
             "messages": messages,
@@ -52,6 +51,7 @@ def chat_completions():
             "stream": stream
         }
         
+        # Add optional parameters if present
         if 'top_p' in data:
             nim_payload['top_p'] = data['top_p']
         if 'frequency_penalty' in data:
@@ -64,6 +64,7 @@ def chat_completions():
             "Content-Type": "application/json"
         }
         
+        # Make request to NVIDIA NIM
         nim_response = requests.post(
             f"{NVIDIA_BASE_URL}/chat/completions",
             json=nim_payload,
@@ -73,6 +74,7 @@ def chat_completions():
         )
         
         if stream:
+            # Handle streaming response
             def generate():
                 for line in nim_response.iter_lines():
                     if line:
@@ -80,6 +82,7 @@ def chat_completions():
             
             return Response(generate(), mimetype='text/event-stream')
         else:
+            # Handle non-streaming response
             return jsonify(nim_response.json()), nim_response.status_code
             
     except Exception as e:
@@ -91,8 +94,11 @@ def chat_completions():
             }
         }), 500
 
-@app.route('/v1/models', methods=['GET'])
+@app.route('/v1/models', methods=['GET', 'OPTIONS'])
 def list_models():
+    if request.method == 'OPTIONS':
+        return '', 204
+    """List available models"""
     try:
         headers = {
             "Authorization": f"Bearer {NVIDIA_API_KEY}",
@@ -108,6 +114,7 @@ def list_models():
         if nim_response.status_code == 200:
             return jsonify(nim_response.json()), 200
         else:
+            # Fallback response
             return jsonify({
                 "object": "list",
                 "data": [
@@ -116,11 +123,24 @@ def list_models():
                         "object": "model",
                         "created": int(datetime.now().timestamp()),
                         "owned_by": "nvidia"
+                    },
+                    {
+                        "id": "meta/llama-3.1-70b-instruct",
+                        "object": "model",
+                        "created": int(datetime.now().timestamp()),
+                        "owned_by": "nvidia"
+                    },
+                    {
+                        "id": "mistralai/mixtral-8x7b-instruct-v0.1",
+                        "object": "model",
+                        "created": int(datetime.now().timestamp()),
+                        "owned_by": "nvidia"
                     }
                 ]
             }), 200
             
     except Exception as e:
+        # Return fallback models list
         return jsonify({
             "object": "list",
             "data": [
@@ -135,8 +155,11 @@ def list_models():
 
 @app.route('/health', methods=['GET'])
 def health_check():
+    """Health check endpoint"""
     return jsonify({"status": "ok", "nvidia_key_set": bool(NVIDIA_API_KEY)}), 200
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 10000))
-    app.run(host='0.0.0.0', port=port)
+    port = int(os.environ.get('PORT', 5000))
+    print(f"🚀 NVIDIA NIM Proxy running on port {port}")
+    print(f"📡 API endpoint: http://localhost:{port}/v1/chat/completions")
+    app.run(host='0.0.0.0', port=port, debug=False)
